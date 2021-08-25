@@ -1,0 +1,234 @@
+                                                                                                                                                                 
+#include <avr/io.h>
+#include <stdio.h>
+#include <util/delay.h>
+void adc_init(); 
+uint16_t adc_read(uint8_t ch);
+
+int main(void)
+{
+  DDRB|=(1<<PB1)|(1<<PB2);          ///Port B as output
+  adc_init();          ///calling adc initialize
+  Serial.begin(9600);  /// starting serial monitor to test LDR values on serial monitor of Arduino ide.
+  //int count=0;
+  
+    TCCR1A |= (1 << WGM11) | (1 << COM1A1)| (1 << COM1B1);                                                    
+    TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11) | (1<<CS10);   /// WGM11, WGM12, WGM13 set to 1 //Fast PWM mode 14//pre-scaler of 64 
+
+
+ //ICR1 register: PWM period
+  ICR1 = 4999; 
+  /// for 50 hz clk we require 4999 value. f=fclk/(64(prescaler)*(ICR1+1))
+  OCR1A = 320; 
+  OCR1B = 320;  
+  /* Local Variables */
+  uint16_t ADC_RawData = 0x0000;                   /// for reading one ldr
+  uint16_t ADC_RawData1 = 0x0000;                  ///for reading other ldr
+  uint16_t ADC_RawData2 = 0x0000;  
+    uint16_t ADC_RawData3 = 0x0000;  
+     uint16_t ADC_RawData4 = 0x0000;  
+ ///for future use
+ 
+        ADC_RawData =  adc_read(0);
+        ADC_RawData1 = adc_read(1);
+       ADC_RawData2 = adc_read(2);
+      //  ADC_RawData3 = adc_read(2);                                 
+//ADC_RawData4 = adc_read(3);
+
+    long temp1 = 0x0000;
+    long temp2 = 0x0000;
+    long temp3 = 0x0000;
+    uint16_t val1 = 0x0000;
+    uint16_t val2 = 0x0000;
+    long darktemp1 = 0x0000;
+    long darktemp2 = 0x0000;
+    long darkval1 = 0x0000;
+    long darkval2 = 0x0000;
+ 
+//Serial.println("start");
+    val1 = adc_read(0);
+    val2 = adc_read(1);
+// Serial.println(ADC_RawData,DEC);         //used to test live values of ldr   /// prints values on serial monitor ide/
+//Serial.print("one");
+ //Serial.println(ADC_RawData1,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+     
+    for(int i=0 ; i<100 ; i++)
+    {
+        temp1 = temp1 + adc_read(0);
+        temp2 = temp2 + adc_read(1);
+         temp3 = temp3 + adc_read(3);
+  Serial.println("show to whit");
+     //dfsfs calibration for bright areas
+       _delay_ms(10);                                                                                                                                                                     
+      
+    }
+    temp1=temp1/100;
+    temp2=temp2/100;
+    temp3=temp3/100;
+    temp1=temp1-10;
+    temp2=temp2-10;
+    temp3=temp3-5;
+  Serial.println("value white");
+Serial.print(temp1,DEC);         //used to test live values of ldr   /// prints values on serial monitor ide/
+Serial.print(" ");
+ Serial.print(temp2,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+    Serial.println(" ");
+ //Serial.println(temp3,DEC);
+   
+           
+ Serial.println("Go to black");
+  Serial.println("Go to black");
+   Serial.println("Go to black");   
+    _delay_ms(5000);
+ 
+ 
+   for(int k=0;k<100;k++)
+   {
+  Serial.println("swhow black");
+     darktemp2 = darktemp2 + adc_read(1);
+    _delay_ms(10);
+    } 
+   darktemp2=darktemp2/100;
+   darktemp2=darktemp2+50;
+      Serial.println("value black");
+
+ Serial.print(darktemp2,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+    Serial.println(" ");
+//Serial.println("startblack");
+
+  
+ //Serial.println(ADC_RawData,DEC);         //used to test live values of ldr   /// prints values on serial monitor ide/
+//Serial.print("one");
+ //Serial.println(ADC_RawData1,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+     
+//Serial.println("endblack");
+// Serial.println(ADC_RawData,DEC);         //used to test l ive values of ldr   /// prints values on serial monitor ide/
+//Serial.print("one");
+// Serial.println(ADC_RawData1,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+
+  
+  while (1)
+  {
+ //  OCR1A = 0;
+    
+    ADC_RawData =  adc_read(0); ///Obstacle 1 /// Read ADC Value at Pin PC0 (A0/ADC0)  ///for first ldr                       
+    ADC_RawData1 = adc_read(1); ///Obstacle 2 // Read ADC Value at Pin PC1 (A1/ADC1)  /// for second ldr
+    ADC_RawData2 = adc_read(2); ///Background (currently not used)
+    ADC_RawData3 = adc_read(3); ///Background (currently not used)
+    ADC_RawData4 = adc_read(4); ///Background (currently not used)
+    
+Serial.print("LDR1Value: ");
+ Serial.print(ADC_RawData,DEC);         //used to test live values of ldr   /// prints values on serial monitor ide/
+Serial.print(" ");
+Serial.print("LDR2Value");
+
+ Serial.print(ADC_RawData1,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+  Serial.print (" ");
+  Serial.print("LDR3Value");
+
+ Serial.print(ADC_RawData2,DEC);        //use d to test live values of ldr   /// prints values on serial monitor ide/
+  Serial.println (" ");
+//Serial.print("LDR4Value");
+
+ //Serial.println(ADC_RawData4,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+
+ //Serial.println(ADC_RawData3,DEC);     
+ // Serial.println(" ");
+    ///CASE 1: when Background is light and obstacles are dark///
+    
+if(ADC_RawData2>100)      
+ {
+     if ( ADC_RawData1<temp2  )         ///when LDR1 reads a value less then 498 or LDR0 reads a value less then 658 it means an object is detected
+      {                                                   /// these values are relative to the intestity of light incident on the ldr.
+   //   Serial.println("jump");                 ///prints jump on serial monitor
+//        count++;
+          
+    //  ADC_RawData =  adc_read(0); ///Obstacle 1                                       
+       // Serial.println(ADC_RawData,DEC);
+      //PORTB |= (1<<PB0);                                              ///test led that we used
+         OCR1A =295;          // 297;                    ///  106.2 degree movement to press the button according to our requirement.
+       _delay_ms(200);                                                                                                                                                                     
+                                                                                
+//         nd stopwatch begins
+        }    
+                          
+
+       OCR1A = 310;                  // 120.6 degree movement to release the button acc to our requirement.
+     
+       if ( ADC_RawData<temp1  )         ///when LDR1 reads a value less then 498 or LDR0 reads a value less then 658 it means an object is detected
+      {                                                   /// these values are relative to the intestity of light incident on the ldr.
+   //   Serial.println("jump");                 ///prints jump on serial monitor
+//        count++;
+          
+    //  ADC_RawData =  adc_read(0); ///Obstacle 1                                       
+       // Serial.println(ADC_RawData,DEC);
+   //  PORTB |= (1<<PB0);                                              ///test led that we used
+         OCR1B =290 ;          // 297;                    ///  106.2 degree movement to press the button according to our requirement.
+       _delay_ms(250);                                                                                                                                                                     
+                                                                                
+//         nd stopwatch begins
+        }   
+      OCR1B = 310;     //    _delay_ms(35);                   
+        
+    //  }
+       //335
+  
+ }
+      ///CASE 2: when Background is Dark and obstacles are light /// will be used in next phase with 3rd ldr.
+
+if(ADC_RawData2 < 100  )
+{
+
+if (ADC_RawData1 >darktemp2)            ///when LDR reads a value less then 460 means a black portion is detected
+      {
+        Serial.println("jump1");                 ///prints jump on serial monitor
+       // count++;
+          
+    //  ADC_RawData =  adc_read(0); ///Obstacle 1
+       // Serial.println(ADC_RawData,DEC);
+        PORTB |= (1<<PB0);                          ///test led that we used
+       OCR1A =298             ;                    ///  106.2 degree movement to press the button according to our requirement.
+    _delay_ms(200);                                                                                                                                                                     
+      
+                    
+         
+        
+      }
+         OCR1A = 320     ; ///120.6 degree movement to release the button acc to our requirement.
+  
+    
+  } 
+   }
+}
+
+  
+void adc_init()  //ADC Initialize function
+{
+  // AREF = AVcc
+  ADMUX = (1<<REFS0);
+  
+  // ADC Enable and prescaler of 128
+  // 16000000/128 = 125000
+  ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
+}
+
+
+uint16_t adc_read(uint8_t ch) // read adc value function
+ {
+  // select the corresponding channel 0~7
+  // ANDing with '7' will always keep the value
+  // of 'ch' between 0 and 7
+  ch &= 0b00000111;  // AND   with 7
+  ADMUX = (ADMUX & 0xF8)|ch;     // clears the bottom 3 bits before ORing
+  
+  // start single conversion
+  // write '1' to ADSC
+  ADCSRA |= (1<<ADSC);
+  
+  // wait for conversion to complete
+  // ADSC becomes '0' again
+  // till then, run loop continuously
+  while(ADCSRA & (1<<ADSC));
+  
+  return (ADC);
+}

@@ -1,0 +1,251 @@
+                                                                                                                                      
+#include <avr/io.h>
+#include <stdio.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
+void adc_init(); 
+uint16_t adc_read(uint8_t ch);
+
+void timer0_init();
+void timer2_init();
+
+long timer_overflowcount = 0x0000;
+long check = 92233720368;
+long timer_overflowcount2 = 0x0000;
+int t = 0;
+int c = 0;
+int k = 1;
+
+
+
+ISR (TIMER2_OVF_vect)
+{
+  timer_overflowcount++;
+  
+}
+ISR (TIMER0_OVF_vect)
+{
+  timer_overflowcount2++;
+  if(check <= ((timer_overflowcount2*256)+TCNT0))
+  {
+     
+      PORTB &= ~(1<<PB0);
+       OCR1A = 375; 
+       t = 1;
+       k = 1;
+  }
+}
+
+int main(void)
+{
+  DDRB= 0xff;          ///Port B as output
+  adc_init();          ///calling adc initialize
+  Serial.begin(9600);  /// starting serial monitor to test LDR values on serial monitor of Arduino ide.
+  //int count=0;
+  
+    TCCR1A |= (1 << WGM11) | (1 << COM1A1);                                                    
+    TCCR1B |= (1 << WGM12) | (1 << WGM13) | (1 << CS11) | (1<<CS10);   /// WGM11, WGM12, WGM13 set to 1 //Fast PWM mode 14//pre-scaler of 64 
+
+
+ //ICR1 register: PWM period
+  ICR1 = 4999;             /// for 50 hz clk we require 4999 value. f=fclk/(64(prescaler)*(ICR1+1))
+  OCR1A = 320;  
+  /* Local Variables */
+  uint16_t ADC_RawData = 0x0000;                   /// for reading one ldr
+  uint16_t ADC_RawData1 = 0x0000;                  ///for reading other ldr
+  uint16_t ADC_RawData2 = 0x0000;  
+    uint16_t ADC_RawData3 = 0x0000;  
+     uint16_t ADC_RawData4 = 0x0000;  
+ ///for future use
+ 
+        
+        ADC_RawData1 = adc_read(1);
+        ADC_RawData2 = adc_read(2);
+        ADC_RawData3 = adc_read(3);                                 
+
+    
+ 
+
+
+ 
+         //used to test live values of ldr   /// prints values on serial monitor ide/
+    timer0_init();
+    timer2_init();
+    sei();
+   int n=0;
+   int j=0;
+   int l=0;
+   int c1=0;
+   int c2=0;
+   long time1[6]= {0,0,0,0,0,0};
+   
+  
+  while (1)
+  {
+ //  OCR1A = 0;
+    
+    //ADC_RawData =  adc_read(0); ///Obstacle 1 /// Read ADC Value at Pin PC0 (A0/ADC0)  ///for first ldr                       
+    ADC_RawData1 = adc_read(1); ///Obstacle 2 // Read ADC Value at Pin PC1 (A1/ADC1)  /// for second ldr
+    ADC_RawData2 = adc_read(2); ///Background (currently not used)
+    ADC_RawData3 = adc_read(3); ///Background (currently not used)
+    //ADC_RawData4 = adc_read(3); ///Background (currently not used)
+    
+/*Serial.print("LDR1Value: ");
+ Serial.print(ADC_RawData1,DEC);         //used to test live values of ldr   /// prints values on serial monitor ide/
+Serial.print(" ");
+Serial.print("LDR2Value");
+
+ Serial.print(ADC_RawData2,DEC);        //used to test live values of ldr   /// prints values on serial monitor ide/
+  Serial.print (" ");*/
+      //used to test live values of ldr   /// prints values on serial monitor ide/
+
+ //Serial.println(ADC_RawData3,DEC);     
+ // Serial.println(" ");
+    ///CASE 1: when Background is light and obstacles are dark///
+    
+//if(ADC_RawData>400)
+// {
+
+ if(ADC_RawData1 <740 && c2 == 0) //obstacle detection
+      {
+        
+        timer_overflowcount = 0x0000;
+        TCNT2  = 0x00; //start counter
+        Serial.println("---------FIRST SENSOR ");
+        Serial.print(ADC_RawData1,DEC);
+        c2++;
+        
+        
+        c1=1;
+        
+        //PORTB |= (1<<PB0);
+      }
+   
+
+ if (ADC_RawData2 < 740 && c1 == 1)  ///obstacle is not detected on the second sensor
+        {
+          c2 =0;
+          Serial.println("--------SECOND SENSOR");
+          Serial.print(ADC_RawData2,DEC);
+          //Serial.println(" timer_overflowcount ");
+          //Serial.println(timer_overflowcount,DEC);
+         if (timer_overflowcount> 115 && timer_overflowcount < 300)
+          {
+            time1[n] = (timer_overflowcount * 256) + TCNT2;
+            n++;
+            Serial.println(" timer_overflowcount ");
+            Serial.println(timer_overflowcount,DEC);
+            timer_overflowcount = 0x0000;
+            c1 = 0;
+            c++;
+            if(n > 5)
+            {
+             n = 0;
+            }
+          }
+          
+          
+          
+          
+         
+        }
+
+        if (j < n )
+        {
+          Serial.println(" ---- jump loop");
+         
+          Serial.println(" j:");
+          Serial.print(j,DEC);
+          Serial.println(" n:");
+          Serial.print(n,DEC);
+         
+          check = time1[j];
+          timer_overflowcount2 = 0x0000;
+          TCNT0  = 0x00; //start counter
+           j++; 
+          if(j > 5)
+          {
+            j = 0;
+          }
+           t=0;
+           c=2;
+           PORTB |= (1<<PB0);       ///test led that we used
+           OCR1A =335;
+           k =0;
+        }
+
+        else if (j == 5 && n == 0 )
+        {
+          Serial.println(" ---- jump loop");
+         
+          Serial.println(" j:");
+          Serial.print(j,DEC);
+          Serial.println(" n:");
+          Serial.print(n,DEC);
+         
+          check = time1[j];
+          timer_overflowcount2 = 0x0000;
+          TCNT0  = 0x00; //start counter
+           j++; 
+          if(j > 5)
+          {
+            j = 0;
+          }
+           t=0;
+           c=2;
+           PORTB |= (1<<PB0);       ///test led that we used
+           OCR1A =335;
+           k =0;
+        }
+  
+ }
+      
+}
+
+  
+void adc_init()  //ADC Initialize function
+{
+  // AREF = AVcc
+  ADMUX = (1<<REFS0);
+  
+  // ADC Enable and prescaler of 128
+  // 16000000/128 = 125000
+  ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
+}
+
+
+uint16_t adc_read(uint8_t ch) // read adc value function
+ {
+  // select the corresponding channel 0~7
+  // ANDing with '7' will always keep the value
+  // of 'ch' between 0 and 7
+  ch &= 0b00000111;  // AND   with 7
+  ADMUX = (ADMUX & 0xF8)|ch;     // clears the bottom 3 bits before ORing
+  
+  // start single conversion
+  // write '1' to ADSC
+  ADCSRA |= (1<<ADSC);
+  
+  // wait for conversion to complete
+  // ADSC becomes '0' again
+  // till then, run loop continuously
+  while(ADCSRA & (1<<ADSC));
+  
+  return (ADC);
+}
+void timer0_init()
+{
+  TCCR0B |= (1 << CS01);
+  TCCR0B |= (1 << CS00);
+  TIMSK0 = (1 << 0);
+  TCNT0  = 0x00;
+}
+
+void timer2_init()
+{
+    TCCR2B |= (1 << CS22);
+  //TCCR2B |= (1 << CS21);
+  //TCCR2B |= (1 << CS20);///64
+  TIMSK2 = (1 << 0);
+  TCNT2  = 0x00;
+}
